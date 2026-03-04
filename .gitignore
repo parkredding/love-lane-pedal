@@ -1,0 +1,6 @@
+stems/
+__pycache__/
+*.pyc
+.pytest_cache/
+bin/
+venv/

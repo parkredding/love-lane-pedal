@@ -1,0 +1,19 @@
+[Unit]
+Description=StemStomp Main Audio Application
+After=network-online.target stemstomp-ota.service
+Wants=network-online.target
+Requires=stemstomp-ota.service
+
+[Service]
+Type=simple
+User=stemstomp
+WorkingDirectory=/opt/stemstomp
+Environment=STEMSTOMP_S3_BUCKET=your-s3-bucket-name
+ExecStart=/opt/stemstomp/venv/bin/python main.py
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

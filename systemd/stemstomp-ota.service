@@ -1,0 +1,17 @@
+[Unit]
+Description=StemStomp OTA Firmware Update
+After=network-online.target
+Wants=network-online.target
+Before=stemstomp.service
+
+[Service]
+Type=oneshot
+User=stemstomp
+WorkingDirectory=/opt/stemstomp
+ExecStart=/opt/stemstomp/venv/bin/python -c "from src.ota import run_ota; run_ota()"
+StandardOutput=journal
+StandardError=journal
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

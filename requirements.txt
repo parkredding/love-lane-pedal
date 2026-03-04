@@ -1,0 +1,19 @@
+# Display
+luma.oled>=3.13.0
+
+# Audio
+sounddevice>=0.4.6
+soundfile>=0.12.1
+
+# GPIO (Raspberry Pi only – mocked in tests)
+RPi.GPIO>=0.7.1; platform_machine == "aarch64" or platform_machine == "armv7l"
+
+# Cloud sync
+boto3>=1.34.0
+
+# Networking utilities
+requests>=2.31.0
+
+# Testing
+pytest>=8.0.0
+pytest-mock>=3.14.0

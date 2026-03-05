@@ -8,12 +8,19 @@ Requires=stemstomp-ota.service
 Type=simple
 User=stemstomp
 WorkingDirectory=/opt/stemstomp
-Environment=STEMSTOMP_S3_BUCKET=your-s3-bucket-name
+EnvironmentFile=/opt/stemstomp/.env
 ExecStart=/opt/stemstomp/venv/bin/python main.py
 Restart=on-failure
 RestartSec=5s
 StandardOutput=journal
 StandardError=journal
+
+# Security hardening
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/stemstomp/stems
+NoNewPrivileges=yes
+PrivateTmp=yes
 
 [Install]
 WantedBy=multi-user.target

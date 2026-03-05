@@ -14,6 +14,5 @@ boto3>=1.34.0
 # Networking utilities
 requests>=2.31.0
 
-# Testing
-pytest>=8.0.0
-pytest-mock>=3.14.0
+# NumPy (audio processing)
+numpy>=1.26.0

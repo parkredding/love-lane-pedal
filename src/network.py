@@ -10,10 +10,13 @@ mocked easily in tests.
 
 from __future__ import annotations
 
+import logging
 import subprocess
 import time
 from enum import Enum, auto
 from typing import Optional
+
+logger = logging.getLogger("stemstomp.network")
 
 
 class NetworkState(Enum):
@@ -108,7 +111,7 @@ class NetworkManager:
             )
         except FileNotFoundError:
             # wifi-connect not installed – log and continue
-            print("[network] wifi-connect not found; skipping AP mode.")
+            logger.warning("wifi-connect not found; skipping AP mode.")
 
     def _wait_for_connection(self, timeout: int = 300) -> None:
         """Block until connected or timeout (seconds) is reached."""

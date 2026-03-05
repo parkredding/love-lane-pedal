@@ -46,14 +46,26 @@ def fetch_latest_release(timeout: int = 10) -> dict:
     return resp.json()
 
 
+def _parse_version(version: str) -> tuple:
+    """Parse a version string like 'v0.1.0' into a comparable tuple."""
+    parts = version.lstrip("v").split(".")
+    result = []
+    for part in parts:
+        try:
+            result.append(int(part))
+        except ValueError:
+            result.append(0)
+    return tuple(result)
+
+
 def update_available(local_version: str, remote_tag: str) -> bool:
     """
-    Return True when *remote_tag* differs from *local_version*.
+    Return True when *remote_tag* is strictly newer than *local_version*.
 
-    Tags are compared as strings; a mismatch (e.g. v0.1.0 vs v0.2.0)
-    signals that an update should be installed.
+    Uses semantic version ordering so that a remote version older than
+    or equal to the local version will not trigger an update.
     """
-    return local_version.lstrip("v") != remote_tag.lstrip("v")
+    return _parse_version(remote_tag) > _parse_version(local_version)
 
 
 def download_asset(release: dict, dest_path: Path, timeout: int = 60) -> bool:

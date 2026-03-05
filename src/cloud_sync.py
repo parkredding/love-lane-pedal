@@ -14,11 +14,14 @@ Download: A separate polling loop periodically lists the S3 bucket
 
 from __future__ import annotations
 
+import logging
 import queue
 import threading
 import time
 from pathlib import Path
 from typing import Callable, Optional
+
+logger = logging.getLogger("stemstomp.cloud_sync")
 
 try:
     import boto3
@@ -127,7 +130,7 @@ class CloudSync:
         try:
             self._s3.upload_file(str(path), self._bucket, key)
         except (BotoCoreError, ClientError) as exc:
-            print(f"[cloud_sync] Upload failed for {path.name}: {exc}")
+            logger.error("Upload failed for %s: %s", path.name, exc)
 
     # ------------------------------------------------------------------
     # Download loop
@@ -150,7 +153,7 @@ class CloudSync:
                 Bucket=self._bucket, Prefix=self._prefix
             )
         except (BotoCoreError, ClientError) as exc:
-            print(f"[cloud_sync] List failed: {exc}")
+            logger.error("List failed: %s", exc)
             return
 
         for obj in resp.get("Contents", []):
@@ -170,4 +173,4 @@ class CloudSync:
             if self._on_stem_downloaded:
                 self._on_stem_downloaded(dest)
         except (BotoCoreError, ClientError) as exc:
-            print(f"[cloud_sync] Download failed for {key}: {exc}")
+            logger.error("Download failed for %s: %s", key, exc)

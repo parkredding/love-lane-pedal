@@ -8,10 +8,13 @@ thread-safe: a lock is held for the duration of each refresh.
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from enum import Enum, auto
 from typing import Optional
+
+logger = logging.getLogger("stemstomp.display")
 
 try:
     from luma.core.interface.serial import i2c
@@ -44,6 +47,9 @@ class OLEDDisplay:
     physical hardware.
     """
 
+    WIDTH = 128
+    HEIGHT = 64
+
     # States that use the blink flag for animation
     _BLINK_STATES = frozenset({
         DisplayState.SYNCING,
@@ -66,7 +72,7 @@ class OLEDDisplay:
                 self._device = ssd1306(serial)
             except Exception as exc:  # pragma: no cover
                 # Hardware not present (e.g., development machine)
-                print(f"[display] OLED init failed ({exc}); running in stub mode.")
+                logger.warning("OLED init failed (%s); running in stub mode.", exc)
 
     # ------------------------------------------------------------------
     # Public API

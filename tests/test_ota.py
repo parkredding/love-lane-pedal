@@ -49,9 +49,9 @@ class TestUpdateAvailable:
     def test_strips_v_prefix(self):
         assert ota_module.update_available("0.1.0", "v0.1.0") is False
 
-    def test_older_remote_still_reports_different(self):
-        # We do not enforce semver ordering – just inequality
-        assert ota_module.update_available("v0.2.0", "v0.1.0") is True
+    def test_older_remote_does_not_trigger_update(self):
+        # Semver ordering prevents downgrades
+        assert ota_module.update_available("v0.2.0", "v0.1.0") is False
 
 
 class TestFetchLatestRelease:

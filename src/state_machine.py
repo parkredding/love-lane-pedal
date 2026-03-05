@@ -14,9 +14,10 @@ happening even though there is no monitor.
 
 from __future__ import annotations
 
+import logging
 from enum import Enum, auto
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 from .display import OLEDDisplay, DisplayState
 from .network import NetworkManager, NetworkState
@@ -24,6 +25,11 @@ from . import ota as ota_module
 from .audio import AudioEngine
 from .cloud_sync import CloudSync
 from .gpio_handler import GPIOHandler, FootswitchEvent
+
+if TYPE_CHECKING:
+    from .config import StemStompConfig
+
+logger = logging.getLogger("stemstomp.state_machine")
 
 
 class BootPhase(Enum):
@@ -38,42 +44,56 @@ class StateMachine:
     """
     Orchestrates the full boot and runtime life-cycle of StemStomp.
 
-    Parameters
-    ----------
-    stems_dir:
-        Directory where WAV stems are stored / loaded from.
-    s3_bucket:
-        S3 bucket name for cloud sync (may be empty string to disable sync).
-    dry_run:
-        Pass True to skip all hardware I/O (for integration tests).
+    Accepts either a ``StemStompConfig`` object or the legacy keyword
+    arguments for backward compatibility with existing tests.
     """
 
     def __init__(
         self,
+        config: Optional[StemStompConfig] = None,
+        *,
         stems_dir: Optional[Path] = None,
         s3_bucket: str = "",
         dry_run: bool = False,
     ) -> None:
-        if stems_dir is None:
+        if config is not None:
+            stems_dir = config.stems_dir
+            s3_bucket = config.s3_bucket
+            dry_run = config.dry_run
+        elif stems_dir is None:
             stems_dir = Path(__file__).resolve().parent.parent / "stems"
 
         self._dry_run = dry_run
         self._phase = BootPhase.HARDWARE_INIT
 
-        self._display = OLEDDisplay()
+        i2c_port = config.oled_i2c_port if config else 1
+        i2c_address = config.oled_i2c_address if config else 0x3C
+        self._display = OLEDDisplay(i2c_port=i2c_port, i2c_address=i2c_address)
         self._network = NetworkManager(dry_run=dry_run)
         self._audio = AudioEngine(
             stems_dir=stems_dir,
             on_recording_saved=self._on_recording_saved,
             dry_run=dry_run,
         )
-        self._gpio = GPIOHandler(dry_run=dry_run)
+
+        pin_map = None
+        if config is not None:
+            pin_map = {
+                config.gpio_pin_record: FootswitchEvent.RECORD_TOGGLE,
+                config.gpio_pin_playback: FootswitchEvent.PLAYBACK_TOGGLE,
+                config.gpio_pin_sync: FootswitchEvent.SYNC_TRIGGER,
+            }
+        self._gpio = GPIOHandler(pin_map=pin_map, dry_run=dry_run)
         self._sync: Optional[CloudSync] = None
 
         if s3_bucket:
+            prefix = config.s3_prefix if config else "stems/"
+            poll_interval = config.sync_poll_interval if config else 30
             self._sync = CloudSync(
                 stems_dir=stems_dir,
                 bucket=s3_bucket,
+                prefix=prefix,
+                poll_interval=poll_interval,
                 on_stem_downloaded=self._on_stem_downloaded,
                 dry_run=dry_run,
             )
@@ -93,7 +113,7 @@ class StateMachine:
             pass
         except Exception as exc:
             self._display.set_state(DisplayState.ERROR)
-            print(f"[state_machine] Fatal error: {exc}")
+            logger.error("Fatal error: %s", exc)
         finally:
             self._shutdown()
 
@@ -131,7 +151,7 @@ class StateMachine:
                 pass
         except Exception as exc:
             # OTA failures are non-fatal; log and continue
-            print(f"[state_machine] OTA check failed: {exc}")
+            logger.warning("OTA check failed: %s", exc)
 
     def _phase_running(self) -> None:
         self._phase = BootPhase.RUNNING

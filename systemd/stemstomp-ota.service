@@ -8,6 +8,7 @@ Before=stemstomp.service
 Type=oneshot
 User=stemstomp
 WorkingDirectory=/opt/stemstomp
+EnvironmentFile=/opt/stemstomp/.env
 ExecStart=/opt/stemstomp/venv/bin/python -c "from src.ota import run_ota; run_ota()"
 StandardOutput=journal
 StandardError=journal
